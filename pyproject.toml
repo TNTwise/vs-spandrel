@@ -5,16 +5,16 @@ build-backend = "hatchling.build"
 [project]
 name = "vsspandrel"
 version = "1.0.0"
-description = "Real-ESRGAN function for VapourSynth"
+description = "Spandrel function for VapourSynth"
 readme = "README.md"
 requires-python = ">=3.10"
 license-files = { paths = ["LICENSE"] }
 authors = [
-  { name = "HolyWu", email = "holywu@gmail.com" },
+  { name = "TNTwise", email = "tntwise3@gmail.com" },
 ]
 keywords = [
   "PyTorch",
-  "Real-ESRGAN",
+  "Spandrel",
   "TensorRT",
   "VapourSynth",
 ]
