@@ -5,7 +5,6 @@ AI Super-Resolution, restoration, and inpainting.
 ## Dependencies
 - [PyTorch](https://pytorch.org/get-started/) 2.6.0.dev or later
 - [VapourSynth](http://www.vapoursynth.com/) R66 or later
-- Spandrel
 - einops
 - safetensors
 
