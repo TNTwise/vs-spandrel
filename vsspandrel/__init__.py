@@ -159,13 +159,11 @@ def vsspandrel(
     model_path = os.path.realpath(model_path)
     model_name = os.path.basename(model_path)
 
-    state_dict = torch.load(model_path, map_location="cpu", weights_only=True)
     module = ModelLoader().load_from_file(model_path)
 
     model = module.model
     scale = module.scale
 
-    model.load_state_dict(state_dict, assign=True)
     model.eval().to(device, dtype)
 
     match scale:

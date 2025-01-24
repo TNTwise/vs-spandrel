@@ -5,6 +5,9 @@ AI Super-Resolution, restoration, and inpainting.
 ## Dependencies
 - [PyTorch](https://pytorch.org/get-started/) 2.6.0.dev or later
 - [VapourSynth](http://www.vapoursynth.com/) R66 or later
+- Spandrel
+- einops
+- safetensors
 
 `trt` requires additional packages:
 - [Torch-TensorRT](https://pytorch.org/TensorRT/) 2.6.0.dev or later
@@ -23,15 +26,11 @@ pip install -U tensorrt-cu12 tensorrt-cu12_bindings tensorrt-cu12_libs --extra-i
 pip install -U vsspandrel
 ```
 
-If you want to download all models at once, run `python -m vsrealesrgan`. If you prefer to only download the model you
-specified at first run, set `auto_download=True` in `realesrgan()`.
-
-
 ## Usage
 ```python
 from vsspandrel import spandrel
 
-ret = spandrel(clip, model_path="") # model path is required!
+ret = vsspandrel(clip, model_path="") # model path is required!
 ```
 
 See `__init__.py` for the description of the parameters.
