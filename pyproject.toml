@@ -3,8 +3,8 @@ requires = ["hatchling"]
 build-backend = "hatchling.build"
 
 [project]
-name = "vsrealesrgan"
-version = "5.2.1"
+name = "vsspandrel"
+version = "1.0.0"
 description = "Real-ESRGAN function for VapourSynth"
 readme = "README.md"
 requires-python = ">=3.10"

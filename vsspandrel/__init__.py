@@ -6,7 +6,6 @@ import sys
 import warnings
 from contextlib import contextmanager
 from dataclasses import dataclass
-from enum import IntEnum
 from threading import Lock
 
 import numpy as np
@@ -14,11 +13,10 @@ import torch
 import torch.nn.functional as F
 import vapoursynth as vs
 
-from .__main__ import download_model
-from .rrdbnet_arch import RRDBNet
-from .srvgg_arch import SRVGGNetCompact
+from .spandrel.libs.spandrel.spandrel import ModelLoader
+from torch._decomp import get_decompositions
 
-__version__ = "5.2.1"
+__version__ = "1.0.0"
 
 os.environ["CI_BUILD"] = "1"
 os.environ["CUDA_MODULE_LOADING"] = "LAZY"
@@ -38,37 +36,6 @@ class Backend:
         module: list[torch.nn.Module]
 
 
-class RealESRGANModel(IntEnum):
-    ESRGAN_SRx4 = 0
-    RealESRGAN_x2plus = 1
-    RealESRGAN_x4plus = 2
-    RealESRGAN_x4plus_anime_6B = 3
-    realesr_animevideov3 = 4
-    realesr_general_x4v3 = 5
-
-    AnimeJaNai_HD_V3_Compact_2x = 100
-    AnimeJaNai_HD_V3_UltraCompact_2x = 101
-    AnimeJaNai_HD_V3_SuperUltraCompact_2x = 102
-    AnimeJaNai_HD_V3Sharp1_Compact_2x = 103
-    AnimeJaNai_HD_V3Sharp1_UltraCompact_2x = 104
-    AnimeJaNai_HD_V3Sharp1_SuperUltraCompact_2x = 105
-    AnimeJaNai_SD_V1beta34_Compact_2x = 106
-    AnimeJaNai_V2_Compact_2x = 107
-    AnimeJaNai_V2_UltraCompact_2x = 108
-    AnimeJaNai_V2_SuperUltraCompact_2x = 109
-
-    AniScale2_Compact_2x = 200
-    AniScale2_Refiner_1x = 201
-    OpenProteus_Compact_2x = 202
-    Ani4Kv2_Compact_2x = 203
-    Ani4Kv2_UltraCompact_2x = 204
-
-    cHiDeNoise_Compact = 300
-    LDVDeNoise_35mm_Compact = 301
-
-    Anime1080Fixer_SuperUltraCompact_1x = 400
-
-
 @contextmanager
 def redirect_stdout_to_stderr():
     old_stdout = os.dup(1)
@@ -82,13 +49,11 @@ def redirect_stdout_to_stderr():
 
 @redirect_stdout_to_stderr()
 @torch.inference_mode()
-def realesrgan(
+def vsspandrel(
     clip: vs.VideoNode,
     device_index: int = 0,
     num_streams: int = 1,
     batch_size: int = 1,
-    model: RealESRGANModel = RealESRGANModel.AnimeJaNai_V2_Compact_2x,
-    auto_download: bool = False,
     model_path: str | None = None,
     denoise_strength: float = 0.5,
     tile: list[int] = [0, 0],
@@ -139,50 +104,50 @@ def realesrgan(
                                     path/name, precision, workspace etc, and specific GPUs and it's not portable.
     """
     if not isinstance(clip, vs.VideoNode):
-        raise vs.Error("realesrgan: this is not a clip")
+        raise vs.Error("spandrel: this is not a clip")
 
     if clip.format.id not in [vs.RGBH, vs.RGBS]:
-        raise vs.Error("realesrgan: only RGBH and RGBS formats are supported")
+        raise vs.Error("spandrel: only RGBH and RGBS formats are supported")
 
     if not torch.cuda.is_available():
-        raise vs.Error("realesrgan: CUDA is not available")
+        raise vs.Error("spandrel: CUDA is not available")
 
     if num_streams < 1:
-        raise vs.Error("realesrgan: num_streams must be at least 1")
+        raise vs.Error("spandrel: num_streams must be at least 1")
 
     if batch_size < 1:
-        raise vs.Error("realesrgan: batch_size must be at least 1")
-
-    if model not in RealESRGANModel:
-        raise vs.Error("realesrgan: model must be one of the members in RealESRGANModel")
+        raise vs.Error("spandrel: batch_size must be at least 1")
 
     if denoise_strength < 0 or denoise_strength > 1:
-        raise vs.Error("realesrgan: denoise_strength must be between 0.0 and 1.0 (inclusive)")
+        raise vs.Error("spandrel: denoise_strength must be between 0.0 and 1.0 (inclusive)")
 
     if not isinstance(tile, list) or len(tile) != 2:
-        raise vs.Error("realesrgan: tile must be a list with 2 items")
+        raise vs.Error("spandrel: tile must be a list with 2 items")
+    
+    if model_path is None:
+        raise vs.Error("spandrel: model_path must be specified")
 
     if not trt_static_shape:
         if not isinstance(trt_min_shape, list) or len(trt_min_shape) != 2:
-            raise vs.Error("realesrgan: trt_min_shape must be a list with 2 items")
+            raise vs.Error("spandrel: trt_min_shape must be a list with 2 items")
 
         if any(trt_min_shape[i] < 1 for i in range(2)):
-            raise vs.Error("realesrgan: trt_min_shape must be at least 1")
+            raise vs.Error("spandrel: trt_min_shape must be at least 1")
 
         if not isinstance(trt_opt_shape, list) or len(trt_opt_shape) != 2:
-            raise vs.Error("realesrgan: trt_opt_shape must be a list with 2 items")
+            raise vs.Error("spandrel: trt_opt_shape must be a list with 2 items")
 
         if any(trt_opt_shape[i] < 1 for i in range(2)):
-            raise vs.Error("realesrgan: trt_opt_shape must be at least 1")
+            raise vs.Error("spandrel: trt_opt_shape must be at least 1")
 
         if not isinstance(trt_max_shape, list) or len(trt_max_shape) != 2:
-            raise vs.Error("realesrgan: trt_max_shape must be a list with 2 items")
+            raise vs.Error("spandrel: trt_max_shape must be a list with 2 items")
 
         if any(trt_max_shape[i] < 1 for i in range(2)):
-            raise vs.Error("realesrgan: trt_max_shape must be at least 1")
+            raise vs.Error("spandrel: trt_max_shape must be at least 1")
 
         if any(trt_min_shape[i] >= trt_max_shape[i] for i in range(2)):
-            raise vs.Error("realesrgan: trt_min_shape must be less than trt_max_shape")
+            raise vs.Error("spandrel: trt_min_shape must be less than trt_max_shape")
 
     torch.set_float32_matmul_precision("high")
 
@@ -190,61 +155,18 @@ def realesrgan(
     dtype = torch.half if fp16 else torch.float
 
     device = torch.device("cuda", device_index)
-
-    if model_path is None:
-        model_name = f"{RealESRGANModel(model).name}.pth"
-        model_path = os.path.join(model_dir, model_name)
-
-        if os.path.getsize(model_path) == 0:
-            if auto_download:
-                download_model(f"https://github.com/HolyWu/vs-realesrgan/releases/download/model/{model_name}")
-            else:
-                raise vs.Error(
-                    "realesrgan: model file has not been downloaded. run `python -m vsrealesrgan` to download all "
-                    "models, or set `auto_download=True` to only download the specified model"
-                )
-    else:
-        model_path = os.path.realpath(model_path)
-        model_name = os.path.basename(model_path)
+    
+    model_path = os.path.realpath(model_path)
+    model_name = os.path.basename(model_path)
 
     state_dict = torch.load(model_path, map_location="cpu", weights_only=True)
-    if "params_ema" in state_dict:
-        state_dict = state_dict["params_ema"]
-    elif "params" in state_dict:
-        state_dict = state_dict["params"]
+    module = ModelLoader().load_from_file(model_path)
 
-    if model == RealESRGANModel.realesr_general_x4v3 and denoise_strength != 1:
-        wdn_model_path = model_path.replace("realesr_general_x4v3", "realesr_general_wdn_x4v3")
-        wdn_state_dict = torch.load(wdn_model_path, map_location="cpu", weights_only=True)["params"]
+    model = module.model
+    scale = module.scale
 
-        for k, v in state_dict.items():
-            state_dict[k] = denoise_strength * v + (1 - denoise_strength) * wdn_state_dict[k]
-
-    if "conv_first.weight" in state_dict:
-        num_feat = state_dict["conv_first.weight"].shape[0]
-        num_block = int(list(state_dict)[-11].split(".")[1]) + 1
-        num_grow_ch = state_dict["body.0.rdb1.conv1.weight"].shape[0]
-
-        match state_dict["conv_first.weight"].shape[1]:
-            case 48:
-                scale = 1
-            case 12:
-                scale = 2
-            case _:
-                scale = 4
-
-        with torch.device("meta"):
-            module = RRDBNet(3, 3, num_feat=num_feat, num_block=num_block, num_grow_ch=num_grow_ch, scale=scale)
-    else:
-        num_feat = state_dict["body.0.weight"].shape[0]
-        num_conv = int(list(state_dict)[-1].split(".")[1]) // 2 - 1
-        scale = math.isqrt(state_dict[list(state_dict)[-1]].shape[0] // 3)
-
-        with torch.device("meta"):
-            module = SRVGGNetCompact(3, 3, num_feat=num_feat, num_conv=num_conv, upscale=scale, act_type="prelu")
-
-    module.load_state_dict(state_dict, assign=True)
-    module.eval().to(device, dtype)
+    model.load_state_dict(state_dict, assign=True)
+    model.eval().to(device, dtype)
 
     match scale:
         case 1:
@@ -286,7 +208,6 @@ def realesrgan(
                 + f"_batch-{batch_size}"
                 + f"_{dimensions}"
                 + f"_{'fp16' if fp16 else 'fp32'}"
-                + (f"_denoise-{denoise_strength}" if model == RealESRGANModel.realesr_general_x4v3 else "")
                 + f"_{torch.cuda.get_device_name(device)}"
                 + f"_trt-{tensorrt.__version__}"
                 + (f"_workspace-{trt_workspace_size}" if trt_workspace_size > 0 else "")
@@ -327,7 +248,9 @@ def realesrgan(
                     )
                 ]
 
-            exported_program = torch.export.export(module, example_inputs, dynamic_shapes=dynamic_shapes)
+            exported_program = torch.export.export(model, example_inputs, dynamic_shapes=dynamic_shapes)
+
+            exported_program = exported_program.run_decompositions(get_decompositions([torch.ops.aten.grid_sampler_2d]))
 
             module = torch_tensorrt.dynamo.compile(
                 exported_program,
@@ -347,7 +270,7 @@ def realesrgan(
         module = [torch.jit.load(trt_engine_path).eval() for _ in range(num_streams)]
         backend = Backend.TensorRT(module)
     else:
-        backend = Backend.Torch(module)
+        backend = Backend.Torch(model)
 
     index = -1
     index_lock = Lock()
@@ -393,7 +316,7 @@ def realesrgan(
         with t2f_stream_locks[local_index], torch.cuda.stream(t2f_streams[local_index]):
             frame = tensor_to_frame(output[0], f[batch_size].copy(), t2f_streams[local_index])
             for i in range(1, batch_size):
-                frame.props[f"vsrealesrgan_batch_frame{i}"] = tensor_to_frame(
+                frame.props[f"vsspandrel_batch_frame{i}"] = tensor_to_frame(
                     output[i], f[batch_size].copy(), t2f_streams[local_index]
                 )
             return frame
@@ -408,7 +331,7 @@ def realesrgan(
 
     outputs = [new_clip.std.FrameEval(lambda n: new_clip.std.ModifyFrame(clips, inference), clip_src=clips)]
     for i in range(1, batch_size):
-        outputs.append(outputs[0].std.PropToClip(f"vsrealesrgan_batch_frame{i}"))
+        outputs.append(outputs[0].std.PropToClip(f"vsspandrel_batch_frame{i}"))
 
     output = vs.core.std.Interleave(outputs)
     if pad > 0:

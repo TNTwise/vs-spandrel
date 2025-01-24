@@ -1,0 +1,3 @@
+[submodule "vsspandrel/spandrel"]
+	path = vsspandrel/spandrel
+	url = https://github.com/tntwise/spandrel

@@ -1,6 +1,6 @@
-# Real-ESRGAN
-Training Real-World Blind Super-Resolution with Pure Synthetic Data, based on https://github.com/xinntao/Real-ESRGAN.
-
+# Spandrel
+Spandrel gives your project support for various PyTorch architectures meant for
+AI Super-Resolution, restoration, and inpainting. 
 
 ## Dependencies
 - [PyTorch](https://pytorch.org/get-started/) 2.6.0.dev or later
@@ -20,7 +20,7 @@ pip install -U tensorrt-cu12 tensorrt-cu12_bindings tensorrt-cu12_libs --extra-i
 
 ## Installation
 ```
-pip install -U vsrealesrgan
+pip install -U vsspandrel
 ```
 
 If you want to download all models at once, run `python -m vsrealesrgan`. If you prefer to only download the model you
@@ -29,9 +29,9 @@ specified at first run, set `auto_download=True` in `realesrgan()`.
 
 ## Usage
 ```python
-from vsrealesrgan import realesrgan
+from vsspandrel import spandrel
 
-ret = realesrgan(clip)
+ret = spandrel(clip, model_path="") # model path is required!
 ```
 
 See `__init__.py` for the description of the parameters.
