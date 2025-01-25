@@ -27,7 +27,7 @@ pip install -U vsspandrel
 
 ## Usage
 ```python
-from vsspandrel import spandrel
+from vsspandrel import vsspandrel
 
 ret = vsspandrel(clip, model_path="") # model path is required!
 ```
