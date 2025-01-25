@@ -23,7 +23,7 @@ os.environ["CUDA_MODULE_LOADING"] = "LAZY"
 
 warnings.filterwarnings("ignore", "The given NumPy array is not writable")
 
-model_dir = os.path.join(os.path.dirname(os.path.realpath(__file__)), "models")
+model_dir = os.getcwd()
 
 
 class Backend:
@@ -148,6 +148,9 @@ def vsspandrel(
 
         if any(trt_min_shape[i] >= trt_max_shape[i] for i in range(2)):
             raise vs.Error("spandrel: trt_min_shape must be less than trt_max_shape")
+    
+    if not os.path.exists(trt_cache_dir):
+        raise vs.Error(f"spandrel: trt_cache_dir: {trt_cache_dir} does")
 
     torch.set_float32_matmul_precision("high")
 
