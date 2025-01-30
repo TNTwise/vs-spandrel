@@ -183,7 +183,7 @@ def vsspandrel(
     model_name = os.path.basename(model_path)
 
     if trt_cache_dir is None:
-        trt_cache_dir = model_path
+        trt_cache_dir = os.path.dirname(os.path.abspath(model_path))
 
     module = ModelLoader().load_from_file(model_path)
 
