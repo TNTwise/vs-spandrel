@@ -111,7 +111,7 @@ def vsspandrel(
     :param trt_opt_shape:           Opt size of dynamic shapes. Ignored if trt_static_shape=True.
     :param trt_max_shape:           Max size of dynamic shapes. Ignored if trt_static_shape=True.
     :param trt_debug:               Print out verbose debugging information.
-    :param trt_mixed_precision:  Use multiple precisions for TensorRT engine, used for models with DySample
+    :param trt_mixed_precision:     Use multiple precisions for TensorRT engine, used for models with DySample
     :param trt_workspace_size:      Size constraints of workspace memory pool.
     :param trt_max_aux_streams:     Maximum number of auxiliary streams per inference stream that TRT is allowed to use
                                     to run kernels in parallel if the network contains ops that can run in parallel,
