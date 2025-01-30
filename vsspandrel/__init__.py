@@ -83,7 +83,7 @@ def vsspandrel(
     trt_opt_shape: list[int] = [720, 480],
     trt_max_shape: list[int] = [1920, 1080],
     trt_debug: bool = False,
-    trt_multi_precision_engine: bool = False,
+    trt_mixed_precision: bool = False,
     trt_workspace_size: int = 0,
     trt_max_aux_streams: int | None = None,
     trt_optimization_level: int | None = None,
@@ -111,7 +111,7 @@ def vsspandrel(
     :param trt_opt_shape:           Opt size of dynamic shapes. Ignored if trt_static_shape=True.
     :param trt_max_shape:           Max size of dynamic shapes. Ignored if trt_static_shape=True.
     :param trt_debug:               Print out verbose debugging information.
-    :param trt_multi_precision_engine:  Use multiple precisions for TensorRT engine.
+    :param trt_mixed_precision:  Use multiple precisions for TensorRT engine, used for models with DySample
     :param trt_workspace_size:      Size constraints of workspace memory pool.
     :param trt_max_aux_streams:     Maximum number of auxiliary streams per inference stream that TRT is allowed to use
                                     to run kernels in parallel if the network contains ops that can run in parallel,
@@ -237,6 +237,7 @@ def vsspandrel(
                 + (f"_workspace-{trt_workspace_size}" if trt_workspace_size > 0 else "")
                 + (f"_aux-{trt_max_aux_streams}" if trt_max_aux_streams is not None else "")
                 + (f"_level-{trt_optimization_level}" if trt_optimization_level is not None else "")
+                + ("_mixed_precision" if trt_mixed_precision else "")
                 + ".ts"
             ),
         )
@@ -286,7 +287,7 @@ def vsspandrel(
 
             exported_program = exported_program.run_decompositions(get_decompositions([torch.ops.aten.grid_sampler_2d]))
 
-            if trt_multi_precision_engine:
+            if trt_mixed_precision:
     
                 module = torch_tensorrt.dynamo.compile(
                     exported_program,
