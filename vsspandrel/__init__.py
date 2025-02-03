@@ -285,8 +285,16 @@ def vsspandrel(
             except Exception:
                 exported_program = torchscript_to_dynamo(model, example_inputs) # Fallback to torchscript if nnmodule_to_dynamo fails, should be dynamic but i cant find any docs on the function
 
-            exported_program = exported_program.run_decompositions(get_decompositions([torch.ops.aten.grid_sampler_2d]))
+            from torch_tensorrt.dynamo.conversion.impl.grid import GridSamplerInterpolationMode
 
+            GridSamplerInterpolationMode.update(
+                {
+                    0: tensorrt.InterpolationMode.LINEAR,
+                    1: tensorrt.InterpolationMode.NEAREST,
+                    2: tensorrt.InterpolationMode.CUBIC,
+                }
+            )
+            
             if trt_mixed_precision:
     
                 module = torch_tensorrt.dynamo.compile(
