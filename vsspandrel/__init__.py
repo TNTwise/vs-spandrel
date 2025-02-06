@@ -14,9 +14,7 @@ import torch.nn.functional as F
 import vapoursynth as vs
 
 from .spandrel.libs.spandrel.spandrel import ModelLoader
-from torch._decomp import get_decompositions
-from torch._export.converter import TS2EPConverter
-from torch.export.exported_program import ExportedProgram
+
 
 __version__ = "1.1.0"
 
@@ -25,25 +23,7 @@ os.environ["CUDA_MODULE_LOADING"] = "LAZY"
 
 warnings.filterwarnings("ignore", "The given NumPy array is not writable")
 
-def torchscript_to_dynamo(
-            model: torch.nn.Module, example_inputs: tuple[torch.Tensor]
-        ) -> ExportedProgram:
-            """Converts a TorchScript module to a Dynamo program."""
-            module = torch.jit.trace(model, example_inputs)
-            exported_program = TS2EPConverter(
-                module, sample_args=tuple(example_inputs), sample_kwargs=None
-            ).convert()
-            del module
-            torch.cuda.empty_cache()
-            return exported_program
 
-def nnmodule_to_dynamo(
-    model: torch.nn.Module, example_inputs: tuple[torch.Tensor], dynamic_shapes=None
-) -> ExportedProgram:
-    """Converts a nn.Module to a Dynamo program."""
-    return torch.export.export(
-        model, tuple(example_inputs), dynamic_shapes=dynamic_shapes
-    )
 
 class Backend:
     @dataclass
@@ -280,12 +260,37 @@ def vsspandrel(
             del model1
             torch.cuda.empty_cache()
 
+            
+            from torch_tensorrt.dynamo.conversion.impl.grid import GridSamplerInterpolationMode
+            from torch._export.converter import TS2EPConverter
+            from torch.export.exported_program import ExportedProgram
+            
+            def torchscript_to_dynamo(
+                model: torch.nn.Module, example_inputs: tuple[torch.Tensor]
+            ) -> ExportedProgram:
+                """Converts a TorchScript module to a Dynamo program."""
+                module = torch.jit.trace(model, example_inputs)
+                exported_program = TS2EPConverter(
+                    module, sample_args=tuple(example_inputs), sample_kwargs=None
+                ).convert()
+                del module
+                torch.cuda.empty_cache()
+                return exported_program
+
+            def nnmodule_to_dynamo(
+                model: torch.nn.Module, example_inputs: tuple[torch.Tensor], dynamic_shapes=None
+                ) -> ExportedProgram:
+                    """Converts a nn.Module to a Dynamo program."""
+                    return torch.export.export(
+                        model, tuple(example_inputs), dynamic_shapes=dynamic_shapes
+                )
+
             try:
                 exported_program = nnmodule_to_dynamo(model, example_inputs, dynamic_shapes=dynamic_shapes)
             except Exception:
                 exported_program = torchscript_to_dynamo(model, example_inputs) # Fallback to torchscript if nnmodule_to_dynamo fails, should be dynamic but i cant find any docs on the function
 
-            from torch_tensorrt.dynamo.conversion.impl.grid import GridSamplerInterpolationMode
+            
 
             GridSamplerInterpolationMode.update(
                 {
