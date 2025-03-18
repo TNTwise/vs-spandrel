@@ -29,6 +29,7 @@ dependencies = [
   "numpy",
   "requests",
   "torch>=2.6.0.dev",
+  "torchvision"
   "tqdm",
   "VapourSynth>=66",
   "einops",
