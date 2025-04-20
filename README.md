@@ -14,8 +14,8 @@ AI Super-Resolution, restoration, and inpainting.
 To install the latest nightly build of PyTorch and Torch-TensorRT, run:
 ```
 pip install -U packaging setuptools wheel
-pip install --pre -U torch torchvision --index-url https://download.pytorch.org/whl/nightly/cu126
-pip install --no-deps --pre -U torch_tensorrt --index-url https://download.pytorch.org/whl/nightly/cu126
+pip install -U torch torchvision --index-url https://download.pytorch.org/whl/test/cu128
+pip install --no-deps -U torch_tensorrt --index-url https://download.pytorch.org/whl/test/cu128
 pip install -U tensorrt-cu12 tensorrt-cu12_bindings tensorrt-cu12_libs --extra-index-url https://pypi.nvidia.com
 ```
 
